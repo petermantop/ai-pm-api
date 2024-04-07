@@ -37,6 +37,9 @@ class UserRegisterationStep3Form(forms.Form):
     is_dao_number = forms.BooleanField(required=False)
     daos = forms.JSONField(required=False)
 
+class UserRegisterationStep5Form(forms.Form):
+    wallet_address = forms.CharField(required=True)
+
 
 class UserLoginForm(forms.Form):
     email = forms.EmailField(required=False)

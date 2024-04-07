@@ -10,7 +10,7 @@ from .serializers import TaskerSerializer, RequesterSerializer
 import json
 import random
 
-from .forms import UserRegisterationStep1Form, UserRegisterationStep2Form, UserRegisterationStep3Form, UserLoginForm, UserExistForm
+from .forms import UserRegisterationStep1Form, UserRegisterationStep2Form, UserRegisterationStep3Form, UserRegisterationStep5Form, UserLoginForm, UserExistForm
 from .models import User, Requester, Tasker, Dao
 from utils import is_valid_solana_address, verify_signature
 
@@ -127,6 +127,34 @@ def handleRegisterStep3(data):
             status=400,
         )
 
+def handleRegisterStep5(data):
+    form = UserRegisterationStep5Form(data)
+    print("register5 called")
+
+    if form.is_valid():
+        wallet_address = data.get("wallet_address")
+
+        tasker = Tasker.objects(solanaAddress=wallet_address, register_step="3").first()
+        if tasker is None:
+            return JsonResponse(
+                {"message": "Tasker Not Found"},
+                safe=False,
+                status=400,
+            )
+        else:
+            tasker.register_step = "5"
+            tasker.register_flag = True
+            tasker.save()
+            return JsonResponse(
+                {"message": "Step 5 completed successfully"}
+            )
+    else:
+        return JsonResponse(
+            {"message": "Invalid inputs", "errors": form.errors},
+            safe=False,
+            status=400,
+        )
+
 @method_decorator(csrf_exempt, name="dispatch")
 class SignupView(View):
     def post(self, request):
@@ -139,6 +167,8 @@ class SignupView(View):
             return handleRegisterStep2(data)
         elif register_step == '3':
             return handleRegisterStep3(data)
+        elif register_step == '5':
+            return handleRegisterStep5(data)
             
         
 
