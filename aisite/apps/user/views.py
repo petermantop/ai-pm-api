@@ -134,7 +134,7 @@ def handleRegisterStep5(data):
     if form.is_valid():
         wallet_address = data.get("wallet_address")
 
-        tasker = Tasker.objects(solanaAddress=wallet_address, register_step="3").first()
+        tasker = Tasker.objects(solanaAddress=wallet_address).first()
         if tasker is None:
             return JsonResponse(
                 {"message": "Tasker Not Found"},
