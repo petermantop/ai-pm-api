@@ -363,6 +363,7 @@ def GetUserByPublicKey(walletType, publicKey):
     if requester:
         return {
             "exist": True,
+            "isAuthenticated": False,
             "user": {
                 "name": requester.name,
                 "role": "requester",
@@ -373,6 +374,7 @@ def GetUserByPublicKey(walletType, publicKey):
     if tasker:
         return {
             "exist": True,
+            "isAuthenticated": False,
             "user": {
                 "name": tasker.name,
                 "role": "tasker",
