@@ -5,6 +5,11 @@ role_choices = (
     ("2", "Normal")
 )
 
+user_role_choices = (
+    ("requester", "requester"),
+    ("tasker", "tasker")
+)
+
 walletType_choices = (
     ("solana", "solana"),
     ("ethereum", "ethereum")
@@ -26,7 +31,7 @@ class UserRegisterationStep1Form(forms.Form):
     step = forms.CharField(required=True)
     wallet_address = forms.CharField(required=False)
     wallet_type = forms.CharField(required=False)
-    role = forms.CharField(required=True)
+    role = forms.ChoiceField(choices=user_role_choices, required=True)
 
 class UserRegisterationStep2Form(forms.Form):
     avatar = forms.CharField(required=False)
