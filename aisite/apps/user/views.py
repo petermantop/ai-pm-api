@@ -11,8 +11,16 @@ import json
 import random
 from bson import ObjectId
 
-from .forms import UserRegisterationStep1Form, UserRegisterationStep2Form, UserRegisterationStep3Form, UserRegisterationStep5Form, UserLoginForm, UserExistForm
-from .models import User, Requester, Tasker, Dao
+from .forms import (
+    UserRegisterationStep1Form,
+    UserRegisterationStep2Form,
+    UserRegisterationStep3Form,
+    UserRegisterationStep4Form,
+    UserRegisterationStep5Form,
+    UserLoginForm,
+    UserExistForm,
+)
+from .models import User, Requester, Tasker
 from utils import is_valid_solana_address, verify_signature
 
 
@@ -22,6 +30,7 @@ def convertDBDataToJson(data):
         if isinstance(value, ObjectId):
             data_dict[key] = str(value)
     return data_dict
+
 
 # Create your views here.
 def handleRegisterStep1(data):
@@ -36,19 +45,22 @@ def handleRegisterStep1(data):
 
         if role == "requester":
             user = Requester.objects.create(
-                **{f"{wallet_type}Address": wallet_address},
-                register_flag=True
+                **{f"{wallet_type}Address": wallet_address}, register_flag=True
             )
             user.save()
             return JsonResponse(
-                {"message": "Registration Completed Successfully", "user": convertDBDataToJson(user)}, safe=False, status=200
+                {
+                    "message": "Registration Completed Successfully",
+                    "user": convertDBDataToJson(user),
+                },
+                safe=False,
+                status=200,
             )
         else:
             user = Tasker.objects.create(
-                **{f"{wallet_type}Address": wallet_address},
-                register_flag=False
+                **{f"{wallet_type}Address": wallet_address}, register_flag=False
             )
-            user.register_step=register_step
+            user.register_step = register_step
             user.save()
             return JsonResponse(
                 {"message": "Step 1 Completed Successfully"}, safe=False, status=200
@@ -59,6 +71,7 @@ def handleRegisterStep1(data):
             safe=False,
             status=400,
         )
+
 
 def handleRegisterStep2(data):
     form = UserRegisterationStep2Form(data)
@@ -71,7 +84,7 @@ def handleRegisterStep2(data):
         name = data.get("name")
         nation = data.get("nation")
 
-        tasker = Tasker.objects(**{f"{wallet_type}Address": wallet_address}, register_step="1").first()
+        tasker = Tasker.objects(**{f"{wallet_type}Address": wallet_address}).first()
         if tasker is None:
             return JsonResponse(
                 {"message": "Tasker Not Found"},
@@ -84,16 +97,15 @@ def handleRegisterStep2(data):
             tasker.nation = nation
             tasker.register_step = "2"
             tasker.save()
-            return JsonResponse(
-                {"message": "Step 2 completed successfully"}
-            )
+            return JsonResponse({"message": "Step 2 completed successfully"})
     else:
         return JsonResponse(
             {"message": "Invalid inputs", "errors": form.errors},
             safe=False,
             status=400,
         )
-    
+
+
 def handleRegisterStep3(data):
     form = UserRegisterationStep3Form(data)
     print("register3 called")
@@ -104,7 +116,7 @@ def handleRegisterStep3(data):
         is_dao_member = data.get("is_dao_member", False)
         daos = data.get("daos")
 
-        tasker = Tasker.objects(**{f"{wallet_type}Address": wallet_address}, register_step="2").first()
+        tasker = Tasker.objects(**{f"{wallet_type}Address": wallet_address}).first()
         if tasker is None:
             return JsonResponse(
                 {"message": "Tasker Not Found"},
@@ -113,20 +125,49 @@ def handleRegisterStep3(data):
             )
         else:
             tasker.is_dao_member = is_dao_member
-            daos_objects = [Dao(id=item['id'], name=item['name']) for item in daos]
-
-            tasker.daos = daos_objects
+            tasker.daos = daos
             tasker.register_step = "3"
             tasker.save()
-            return JsonResponse(
-                {"message": "Step 3 completed successfully"}
-            )
+            return JsonResponse({"message": "Step 3 completed successfully"})
     else:
         return JsonResponse(
             {"message": "Invalid inputs", "errors": form.errors},
             safe=False,
             status=400,
         )
+
+
+def handleRegisterStep4(data):
+    form = UserRegisterationStep4Form(data)
+    print("register3 called")
+
+    if form.is_valid():
+        wallet_address = data.get("wallet_address")
+        wallet_type = data.get("wallet_type")
+        skills = data.get("skills")
+        desired_skills = data.get("desired_skills")
+
+        tasker = Tasker.objects(**{f"{wallet_type}Address": wallet_address}).first()
+        if tasker is None:
+            return JsonResponse(
+                {"message": "Tasker Not Found"},
+                safe=False,
+                status=400,
+            )
+        else:
+
+            tasker.skills = skills
+            tasker.desired_skills = desired_skills
+            tasker.register_step = "4"
+            tasker.save()
+            return JsonResponse({"message": "Step 4 completed successfully"})
+    else:
+        return JsonResponse(
+            {"message": "Invalid inputs", "errors": form.errors},
+            safe=False,
+            status=400,
+        )
+
 
 def handleRegisterStep5(data):
     form = UserRegisterationStep5Form(data)
@@ -148,7 +189,10 @@ def handleRegisterStep5(data):
             tasker.register_flag = True
             tasker.save()
             return JsonResponse(
-                {"message": "Step 5 completed successfully",  "user": convertDBDataToJson(tasker)}
+                {
+                    "message": "Step 5 completed successfully",
+                    "user": convertDBDataToJson(tasker),
+                }
             )
     else:
         return JsonResponse(
@@ -157,22 +201,24 @@ def handleRegisterStep5(data):
             status=400,
         )
 
+
 @method_decorator(csrf_exempt, name="dispatch")
 class SignupView(View):
     def post(self, request):
         data = json.loads(request.body)
         register_step = data.get("step")
 
-        if register_step == '1':
+        if register_step == "1":
             return handleRegisterStep1(data)
-        elif register_step == '2':
+        elif register_step == "2":
             return handleRegisterStep2(data)
-        elif register_step == '3':
+        elif register_step == "3":
             return handleRegisterStep3(data)
-        elif register_step == '5':
+        elif register_step == "4":
+            return handleRegisterStep4(data)
+        elif register_step == "5":
             return handleRegisterStep5(data)
-            
-        
+
 
 @method_decorator(csrf_exempt, name="dispatch")
 class SigninView(View):
@@ -198,12 +244,20 @@ class SigninView(View):
             nonce = str(random.randint(10000, 109998))
 
             requester = (
-                Requester.objects.filter(solanaAddress=publicKey, register_flag=True).first()
-                or Requester.objects.filter(ethereumAddress=publicKey, register_flag=True).first()
+                Requester.objects.filter(
+                    solanaAddress=publicKey, register_flag=True
+                ).first()
+                or Requester.objects.filter(
+                    ethereumAddress=publicKey, register_flag=True
+                ).first()
             )
             tasker = (
-                Tasker.objects.filter(solanaAddress=publicKey, register_flag=True).first()
-                or Tasker.objects.filter(ethereumAddress=publicKey, register_flag=True).first()
+                Tasker.objects.filter(
+                    solanaAddress=publicKey, register_flag=True
+                ).first()
+                or Tasker.objects.filter(
+                    ethereumAddress=publicKey, register_flag=True
+                ).first()
             )
             print("requester")
             print(requester)
@@ -225,7 +279,7 @@ class SigninView(View):
                 nonceToVerify = request.session["publicKey"]
             else:
                 nonceToVerify = user.nonce
-            
+
             print("publicKey", nonceToVerify, publicKey, signature)
 
             verified = verify_signature(nonceToVerify, signature, publicKey, walletType)
@@ -294,6 +348,7 @@ def logout(request):
             {"message": "You are already logged out"}, safe=False, status=400
         )
 
+
 def GetUserByPublicKey(walletType, publicKey):
     requester = Requester.objects(
         **{f"{walletType}Address": publicKey},
@@ -302,13 +357,29 @@ def GetUserByPublicKey(walletType, publicKey):
         **{f"{walletType}Address": publicKey},
     ).first()
 
-    if(requester is None and tasker is None):
+    if requester is None and tasker is None:
         return {"exist": False}
-    
-    if(requester):
-        return {"exist": True, "user": {"name": requester.name, "role": "requester", "registerFlag": requester.register_flag, "step": requester.register_step}}
-    if(tasker):
-        return {"exist": True, "user": {"name": tasker.name, "role": "tasker", "registerFlag": tasker.register_flag, "step": tasker.register_step}}
+
+    if requester:
+        return {
+            "exist": True,
+            "user": {
+                "name": requester.name,
+                "role": "requester",
+                "registerFlag": requester.register_flag,
+                "step": requester.register_step,
+            },
+        }
+    if tasker:
+        return {
+            "exist": True,
+            "user": {
+                "name": tasker.name,
+                "role": "tasker",
+                "registerFlag": tasker.register_flag,
+                "step": tasker.register_step,
+            },
+        }
 
 
 @method_decorator(csrf_exempt, name="dispatch")
