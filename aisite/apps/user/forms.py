@@ -51,6 +51,7 @@ class UserRegisterationStep4Form(forms.Form):
 class UserRegisterationStep5Form(forms.Form):
     wallet_address = forms.CharField(required=True)
     wallet_type = forms.CharField(required=True)
+    agent = forms.CharField(required=True)
 
 
 class UserLoginForm(forms.Form):

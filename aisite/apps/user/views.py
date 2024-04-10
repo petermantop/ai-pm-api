@@ -176,6 +176,7 @@ def handleRegisterStep5(data):
     if form.is_valid():
         wallet_address = data.get("wallet_address")
         wallet_type = data.get("wallet_type")
+        agent = data.get("agent")
 
         tasker = Tasker.objects(**{f"{wallet_type}Address": wallet_address}).first()
         if tasker is None:
@@ -187,6 +188,7 @@ def handleRegisterStep5(data):
         else:
             tasker.register_step = "5"
             tasker.register_flag = True
+            tasker.agent = agent
             tasker.save()
             return JsonResponse(
                 {
@@ -349,7 +351,7 @@ def logout(request):
         )
 
 
-def GetUserByPublicKey(walletType, publicKey):
+def GetUserByPublicKey(walletType, publicKey, isAuthenticated):
     requester = Requester.objects(
         **{f"{walletType}Address": publicKey},
     ).first()
@@ -363,7 +365,7 @@ def GetUserByPublicKey(walletType, publicKey):
     if requester:
         return {
             "exist": True,
-            "isAuthenticated": False,
+            "isAuthenticated": isAuthenticated,
             "user": {
                 "name": requester.name,
                 "role": "requester",
@@ -374,7 +376,7 @@ def GetUserByPublicKey(walletType, publicKey):
     if tasker:
         return {
             "exist": True,
-            "isAuthenticated": False,
+            "isAuthenticated": isAuthenticated,
             "user": {
                 "name": tasker.name,
                 "role": "tasker",
@@ -394,6 +396,13 @@ class UserExist(View):
             walletType = data.get("walletType")
             publicKey = data.get("publicKey")
 
-            return JsonResponse(GetUserByPublicKey(walletType, publicKey), status=200)
+            return JsonResponse(
+                GetUserByPublicKey(
+                    walletType,
+                    publicKey,
+                    isAuthenticated=request.session.get("publicKey") is not None,
+                ),
+                status=200,
+            )
         else:
             return JsonResponse({"message": "Invalid Request", "errors": form.errors})

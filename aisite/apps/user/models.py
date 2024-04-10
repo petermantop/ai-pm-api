@@ -60,6 +60,7 @@ class Tasker(Document):
     daos = ListField(StringField())
     skills = ListField(StringField())
     desired_skills = ListField(StringField())
+    agent = StringField()
     first_name = StringField(max_length=30, verbose_name="First Name")
     last_name = StringField(max_length=30, verbose_name="Last Name")
     date_of_birth = DateTimeField(verbose_name="Date of Birth")
