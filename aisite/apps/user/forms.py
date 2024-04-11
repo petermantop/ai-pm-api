@@ -44,7 +44,7 @@ class UserRegisterationStep3Form(forms.Form):
 class UserRegisterationStep4Form(forms.Form):
     wallet_address = forms.CharField(required=True)
     wallet_type = forms.CharField(required=True)
-    skills = forms.JSONField(required=True)
+    skills = forms.JSONField(required=False)
     desired_skills = forms.JSONField(required=False)
 
 
