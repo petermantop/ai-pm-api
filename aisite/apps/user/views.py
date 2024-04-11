@@ -44,10 +44,15 @@ def handleRegisterStep1(data):
         role = data.get("role", "tasker")  # ["tasker", "requester"]
 
         if role == "requester":
-            user = Requester.objects.create(
-                **{f"{wallet_type}Address": wallet_address}, register_flag=True
-            )
-            user.save()
+            user = Requester.objects.filter(
+                **{f"{wallet_type}Address": wallet_address}
+            ).first()
+            Tasker.objects(**{f"{wallet_type}Address": wallet_address}).delete()
+            if user is None:
+                user = Requester.objects.create(
+                    **{f"{wallet_type}Address": wallet_address}, register_flag=True
+                )
+                user.save()
             return JsonResponse(
                 {
                     "message": "Registration Completed Successfully",
@@ -57,9 +62,14 @@ def handleRegisterStep1(data):
                 status=200,
             )
         else:
-            user = Tasker.objects.create(
-                **{f"{wallet_type}Address": wallet_address}, register_flag=False
-            )
+            user = Tasker.objects.filter(
+                **{f"{wallet_type}Address": wallet_address}
+            ).first()
+            Requester.objects(**{f"{wallet_type}Address": wallet_address}).delete()
+            if user is None:
+                user = Tasker.objects.create(
+                    **{f"{wallet_type}Address": wallet_address}, register_flag=False
+                )
             user.register_step = register_step
             user.save()
             return JsonResponse(
@@ -176,7 +186,7 @@ def handleRegisterStep5(data):
     if form.is_valid():
         wallet_address = data.get("wallet_address")
         wallet_type = data.get("wallet_type")
-        agent = data.get("agent")
+        agents = data.get("agents")
 
         tasker = Tasker.objects(**{f"{wallet_type}Address": wallet_address}).first()
         if tasker is None:
@@ -188,7 +198,7 @@ def handleRegisterStep5(data):
         else:
             tasker.register_step = "5"
             tasker.register_flag = True
-            tasker.agent = agent
+            tasker.agents = agents
             tasker.save()
             return JsonResponse(
                 {
@@ -315,17 +325,15 @@ class SigninView(View):
             else:
                 user.nonce = nonce
                 user.save()
-                request.session["role"] = "Requester" if requester else "Tasker"
+                request.session["role"] = "requester" if requester else "tasker"
 
             request.session["userId"] = str(user.id)
             request.session["logged"] = True
 
             print("request.session")
             print(request.session["userId"])
-            user_dict = user.to_mongo().to_dict()
-            for key, value in user_dict.items():
-                if isinstance(value, ObjectId):
-                    user_dict[key] = str(value)
+            user_dict = convertDBDataToJson(user)
+            user_dict["role"] = request.session["role"]
             return JsonResponse(
                 {"message": "Logged in successfully", "user": user_dict},
                 safe=True,
