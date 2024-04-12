@@ -421,6 +421,9 @@ class UserByPublicKey(View):
         walletType = request.GET.get('walletType', None)
         publicKey = request.GET.get('publicKey', None)
 
+        print(walletType, publicKey)
+
+
         requester = Requester.objects(
             **{f"{walletType}Address": publicKey},
         ).first()
@@ -428,8 +431,10 @@ class UserByPublicKey(View):
             **{f"{walletType}Address": publicKey},
         ).first()
 
+        print(requester, tasker)
+
         if requester is None and tasker is None:
-            return {"exist": False}
+            return JsonResponse({"exist": False})
 
         if requester:
             return JsonResponse({
