@@ -7,6 +7,7 @@ from mongoengine import (
     EmbeddedDocument,
     EmbeddedDocumentField,
     ObjectIdField,
+    BooleanField,
     PULL,
 )
 from ..user.models import Requester, Tasker
@@ -16,6 +17,7 @@ import bson
 class Chat(EmbeddedDocument):
     message = StringField(required=True)
     response = StringField(required=True)
+    is_final_outline = BooleanField(required=True)
     history = ListField()
 
 

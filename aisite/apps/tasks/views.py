@@ -8,6 +8,26 @@ import os
 import json
 import requests
 from .forms import ChatForm
+from bson import ObjectId
+from mongoengine import (
+    Document,
+    EmbeddedDocument
+)
+
+
+def convertDBDataToJson(data):
+    if isinstance(data, (Document, EmbeddedDocument)):
+        data = data.to_mongo()  # Convert document to a MongoDB dict
+
+    if isinstance(data, dict):
+        return {k: convertDBDataToJson(v) for k, v in data.items()}  # Optionally exclude '_id'
+    elif isinstance(data, list):
+        return [convertDBDataToJson(item) for item in data]
+    elif isinstance(data, ObjectId):
+        return str(data)  # Convert ObjectId to string
+    else:
+        return data
+
 
 
 @api_view(["POST"])
@@ -17,6 +37,12 @@ def create_task(request):
 
     return Response({"taskId": str(task.id)}, status=201)
 
+@api_view(["GET"])
+def get_task(request, taskId):
+    task = Task.objects.filter(id=taskId).first()
+
+    return Response(convertDBDataToJson(task), status=200)
+
 
 @api_view(["POST"])
 def go_chat(request, taskId):
@@ -24,7 +50,7 @@ def go_chat(request, taskId):
     data = json.loads(request.body)
     form = ChatForm(data)
     if task is None:
-        return Response({"message": "Task Not Found"}, safe=False, status=400)
+        return Response({"message": "Task Not Found"}, status=400)
 
     if form.is_valid():
         message = data.get("message")
@@ -39,7 +65,7 @@ def go_chat(request, taskId):
         print(response, response["response"])
         # add chat
         chat = Chat(
-            message=message, response=response["response"], history=response["history"]
+            message=message, response=response["response"], history=response["history"], is_final_outline=response["is_final_outline"]
         )
         task.chat.append(chat)
         task.save()
@@ -60,5 +86,5 @@ def go_chat(request, taskId):
         return Response(response, status=200)
     else:
         return Response(
-            {"message": "Invalid inputs", "errors": form.errors}, safe=False, status=400
+            {"message": "Invalid inputs", "errors": form.errors}, status=400
         )
