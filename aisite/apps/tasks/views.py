@@ -12,7 +12,7 @@ from .forms import ChatForm
 
 @api_view(["POST"])
 def create_task(request):
-    userId = "661918fdd7d5867033aebcec"  # request.session["userId"]
+    userId = request.session["userId"]
     task = Task(requester=userId).save()
 
     return Response({"taskId": str(task.id)}, status=201)
